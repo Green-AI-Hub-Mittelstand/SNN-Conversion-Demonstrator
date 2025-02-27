@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuromorphic Computing</title>
+    <!-- External stylesheets for UI components and layout -->
+    <link rel="stylesheet" href="static/styles/styles.css">
+    <!-- jQuery for AJAX requests and DOM manipulation -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Chart.js for real-time data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header bar with logos and main title -->
+    <div class="header-bar">
+        <div class="header-logos left-logos">
+            <img src="static/img/dfki_Logo_digital_black.svg" alt="DFKI Logo" class="logo dfki-logo">
+        </div>
+        <h1>Neuromorphic Computing</h1>
+        <div class="header-logos right-logos">
+            <img src="static/img/green-ai-hub-mittelstand.svg" alt="Green AI Hub Logo" class="logo green-ai-hub-logo">
+        </div>
+    </div>
+
+    <!-- Main content container with charts and control panel -->
+    <div class="main-container">
+        <!-- Real-time data visualization section with two charts -->
+        <div class="graphs-container">
+            <!-- Sensor data visualization chart -->
+            <div class="chart-container">
+                <canvas id="sensorChart"></canvas>
+            </div>
+            <!-- Energy consumption comparison chart -->
+            <div class="chart-container">
+                <canvas id="energyChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- User interface controls for model loading and inference -->
+        <div class="controls-container">
+            <!-- Baseline measurement controls (currently disabled) -->
+            <!--
+            <div class="baseline-controls">
+                <h2>Energy Baseline</h2>
+                <button id="measure-baseline">Measure Baseline</button>
+                <div id="baseline-results">
+                    <p>Current baseline: <span id="baseline-value">Not measured</span></p>
+                </div>
+            </div>
+            -->
+
+            <!-- Card for model selection and control options -->
+            <div class="control-card">
+                <h2>Model Controls</h2>
+                <div class="model-selection">
+                    <!-- Timestep selection for configuring SNN temporal dynamics -->
+                    <div class="form-group">
+                        <label for="timesteps">Timesteps:</label>
+                        <select id="timesteps">
+                            <option value="5">5 Timesteps</option>
+                            <option value="10">10 Timesteps</option>
+                            <option value="20">20 Timesteps</option>
+                            <option value="35">35 Timesteps</option>
+                            <option value="50">50 Timesteps</option>
+                            <option value="100">100 Timesteps</option>
+                            <option value="200">200 Timesteps</option>
+                        </select>
+                    </div>
+                    <!-- Model mode selection (training vs converted) -->
+                    <div class="form-group">
+                        <label for="model-mode">Model Mode:</label>
+                        <select id="model-mode">
+                            <option value="train">Training</option>
+                            <option value="convert">Converted</option>
+                        </select>
+                    </div>
+                    <!-- Action buttons for model operations -->
+                    <div class="button-group">
+                        <button id="load-model" class="button-primary">Load Model</button>
+                        <button id="start-inference" class="button-success" disabled>Start Inference</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card to display inference results comparison between ANN/SNN -->
+            <div class="control-card inference-results" id="inference-results">
+                <h3>Inference Results</h3>
+                <div class="inference-output" id="inference-output">No inference results yet</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for data visualization and interaction -->
+    <script>
+        /**
+         * Energy Consumption Chart Configuration
+         * 
+         * Creates a real-time line chart to display and compare energy consumption
+         * between traditional computing (Mac) and neuromorphic computing (Xylo)
+         */
+        const ctxEnergy = document.getElementById('energyChart').getContext('2d');
+        
+        // Create gradient fills for better visual appearance of chart areas
+        const energyChartGradient1 = ctxEnergy.createLinearGradient(0, 0, 0, 400);
+        energyChartGradient1.addColorStop(0, 'rgba(255, 99, 132, 0.7)');  // Red for Xylo
+        energyChartGradient1.addColorStop(1, 'rgba(255, 99, 132, 0.1)');
+
+        const energyChartGradient2 = ctxEnergy.createLinearGradient(0, 0, 0, 400);
+        energyChartGradient2.addColorStop(0, 'rgba(75, 192, 192, 0.7)');  // Green for Mac
+        energyChartGradient2.addColorStop(1, 'rgba(75, 192, 192, 0.1)');
+
+        // Initialize energy consumption chart with two data series
+        const energyChart = new Chart(ctxEnergy, {
+            type: 'line',
+            data: {
+                labels: [],  // Time labels will be populated dynamically
+                datasets: [{
+                    label: 'Xylo Energy (SNN)',
+                    data: [],  // Neuromorphic chip energy data
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: energyChartGradient1,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,  // Curved lines for smoother visualization
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointBorderColor: 'rgba(255, 255, 255, 1)',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointHoverBorderColor: 'rgba(255, 255, 255, 1)',
+                    pointHoverBorderWidth: 2
+                },
+                {
+                    label: 'Mac Energy (ANN)',
+                    data: [],  // Traditional CPU/GPU energy data
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: energyChartGradient2,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointBorderColor: 'rgba(255, 255, 255, 1)',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointHoverBorderColor: 'rgba(255, 255, 255, 1)',
+                    pointHoverBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Energy (mW)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {top: 10, bottom: 10}
+                        },
+                        grid: {
+                            color: 'rgba(200, 200, 200, 0.15)',
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            color: '#666'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {top: 10, bottom: 10}
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            color: '#666',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Real-time Energy Consumption',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        padding: {top: 10, bottom: 20},
+                        color: '#333'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20,
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#333',
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyColor: '#666',
+                        bodyFont: {
+                            size: 13
+                        },
+                        borderColor: '#ddd',
+                        borderWidth: 1,
+                        caretSize: 8,
+                        cornerRadius: 6,
+                        padding: 12,
+                        displayColors: true,
+                        boxWidth: 10,
+                        boxHeight: 10,
+                        boxPadding: 3
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    intersect: false,
+                    axis: 'x'
+                },
+                elements: {
+                    line: {
+                        tension: 0.4
+                    }
+                }
+            }
+        });
+
+        /**
+         * Sensor Data Chart Configuration
+         * 
+         * Creates a real-time line chart to visualize readings from 
+         * three accelerometer sensors for fault detection
+         */
+        const ctxSensor = document.getElementById('sensorChart').getContext('2d');
+        const sensorChartGradient = ctxSensor.createLinearGradient(0, 0, 0, 400);
+        sensorChartGradient.addColorStop(0, 'rgba(54, 162, 235, 0.7)');
+        sensorChartGradient.addColorStop(1, 'rgba(54, 162, 235, 0.1)');
+
+        // Initialize sensor data chart with three data series
+        const sensorChart = new Chart(ctxSensor, {
+            type: 'line',
+            data: {
+                labels: [],  // Time labels will be populated dynamically
+                datasets: [
+                    {
+                        label: 'Sensor A1',
+                        data: [],  // First accelerometer data
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        fill: false
+                    },
+                    {
+                        label: 'Sensor A2',
+                        data: [],  // Second accelerometer data
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        fill: false
+                    },
+                    {
+                        label: 'Sensor A3',
+                        data: [],  // Third accelerometer data
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Sensor Value',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {top: 10, bottom: 10}
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {top: 10, bottom: 10}
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Real-time Sensor Data',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        padding: {top: 10, bottom: 20},
+                        color: '#333'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        /**
+         * Fetches sensor data from backend API and updates the sensor chart
+         * 
+         * Maintains a rolling window of 50 data points for visualization
+         * and handles data refresh when simulation reaches the end
+         */
+        function fetchSensorData() {
+            $.getJSON('/sensor_data', function(latestReading) {
+                const currentTime = new Date().toLocaleTimeString();
+
+                // Update Sensor Chart with latest readings
+                sensorChart.data.labels.push(currentTime);
+                sensorChart.data.datasets[0].data.push(latestReading.a1);
+                sensorChart.data.datasets[1].data.push(latestReading.a2);
+                sensorChart.data.datasets[2].data.push(latestReading.a3);
+
+                // Implement rolling window - remove oldest data points when exceeding 50
+                if (sensorChart.data.labels.length > 50) {
+                    sensorChart.data.labels.shift();
+                    sensorChart.data.datasets.forEach((dataset) => {
+                        dataset.data.shift();
+                    });
+                }
+
+                sensorChart.update();
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.error("Error fetching sensor data:", textStatus, errorThrown);
+                // Handle reaching the end of simulation data by resetting
+                if (jqXHR.status === 404) {
+                    console.log("End of sensor data reached. Resetting...");
+                }
+            });
+        }
+
+        /**
+         * Fetches energy consumption data and updates the energy chart
+         * 
+         * Retrieves data from both Xylo neuromorphic processor and Mac
+         * for side-by-side comparison of energy efficiency
+         */
+        function updateEnergyChart() {
+            $.getJSON('/energy', function(data) {
+                const currentTime = new Date().toLocaleTimeString();
+                
+                // Add new data points for both energy sources
+                energyChart.data.labels.push(currentTime);
+                energyChart.data.datasets[0].data.push(data.xylo);
+                energyChart.data.datasets[1].data.push(data.mac);
+
+                // Implement rolling window - keep only most recent 50 readings
+                if (energyChart.data.labels.length > 50) {
+                    energyChart.data.labels.shift();
+                    energyChart.data.datasets.forEach(dataset => {
+                        dataset.data.shift();
+                    });
+                }
+
+                // Update without animation for smoother real-time display
+                energyChart.update('none');
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.error("Error fetching energy data:", textStatus, errorThrown);
+            });
+        }
+
+
+        /**
+         * Model Selection and Inference Control
+         * 
+         * Sets up event listeners for UI controls and manages
+         * model loading and inference execution via AJAX calls
+         */
+        $(document).ready(function() {
+            // Store currently loaded model configuration
+            let currentModel = null;
+
+            // Event handler for "Load Model" button
+            $('#load-model').on('click', function() {
+                const timesteps = $('#timesteps').val();
+                const modelMode = $('#model-mode').val();
+
+                // Provide visual feedback during model loading
+                const $button = $(this);
+                $button.prop('disabled', true);
+                $button.addClass('loading');
+                $button.text('Loading Model...');
+
+                // Send AJAX request to backend to load the selected model
+                $.ajax({
+                    url: '/load_model',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        timesteps: timesteps,
+                        mode: modelMode
+                    }),
+                    success: function(response) {
+                        console.log('Model loaded successfully:', response);
+                        
+                        // Reset button state with success feedback
+                        $button.removeClass('loading');
+                        $button.text('Model Loaded');
+                        setTimeout(() => {
+                            $button.text('Load Model');
+                            $button.prop('disabled', false);
+                        }, 2000);
+                        
+                        // Enable inference button now that model is loaded
+                        $('#start-inference').prop('disabled', false);
+                        
+                        // Store the current model details for inference requests
+                        currentModel = {
+                            timesteps: timesteps,
+                            mode: modelMode
+                        };
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading model:', error);
+                        
+                        // Reset button state with error feedback
+                        $button.removeClass('loading');
+                        $button.text('Loading Failed');
+                        setTimeout(() => {
+                            $button.text('Load Model');
+                            $button.prop('disabled', false);
+                        }, 2000);
+                        
+                        // Keep inference button disabled on error
+                        $('#start-inference').prop('disabled', true);
+                    }
+                });
+            });
+
+            // Event handler for "Start Inference" button
+            $('#start-inference').on('click', function() {
+                const $button = $(this);
+                $button.prop('disabled', true);
+                $button.addClass('loading');
+                $button.text('Running Inference...');
+                
+                // Show loading indicator in results area
+                $('#inference-output').html('<p>Processing inference...</p>');
+                
+                // Execute inference with the currently loaded model
+                $.ajax({
+                    url: '/start_inference',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(currentModel),
+                    success: function(response) {
+                        console.log('Inference completed:', response);
+                        $button.removeClass('loading');
+                        $button.text('Start Inference');
+                        $button.prop('disabled', false);
+                        
+                        // Format timing values to 4 decimal places for readability
+                        const annTime = parseFloat(response.ann_time).toFixed(4);
+                        const snnTime = parseFloat(response.snn_time).toFixed(4);
+                        
+                        // Calculate performance comparison ratio between ANN and SNN
+                        const speedupRatio = (response.snn_time / response.ann_time).toFixed(2);
+                        
+                        // Generate visually structured results display
+                        let resultHTML = `
+                            <h3>Inference Results</h3>
+                            <div class="stats-container">
+                                <div class="stat-card ann">
+                                    <div class="stat-label">ANN Time</div>
+                                    <div class="stat-value">${annTime}s</div>
+                                    <div class="stat-label">Standard Neural Network</div>
+                                </div>
+                                <div class="stat-card snn">
+                                    <div class="stat-label">SNN Time</div>
+                                    <div class="stat-value">${snnTime}s</div>
+                                    <div class="stat-label">Spiking Neural Network</div>
+                                </div>
+                            </div>
+                            <div class="speedup">
+                                ANN is ${speedupRatio}x faster than SNN
+                            </div>
+                        `;
+                        $('#inference-output').html(resultHTML);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error during inference:', error);
+                        $button.removeClass('loading');
+                        $button.text('Start Inference');
+                        $button.prop('disabled', false);
+                        $('#inference-output').html('<p>Error during inference. Please try again.</p>');
+                    }
+                });
+            });
+        });
+
+        // Baseline measurement functionality (currently disabled)
+        /*
+        $('#measure-baseline').on('click', function() {
+            $(this).prop('disabled', true);
+            $(this).text('Measuring...');
+            
+            $.ajax({
+                url: '/start_baseline',
+                method: 'POST',
+                success: function(response) {
+                    $('#baseline-value').text(response.baseline.toFixed(4) + ' mW');
+                    
+                    // Add baseline line to energy chart
+                    energyChart.options.plugins.annotation = {
+                        annotations: {
+                            baseline: {
+                                type: 'line',
+                                yMin: response.baseline,
+                                yMax: response.baseline,
+                                borderColor: 'rgba(255, 0, 0, 0.5)',
+                                borderWidth: 2,
+                                label: {
+                                    content: 'Baseline',
+                                    enabled: true
+                                }
+                            }
+                        }
+                    };
+                    energyChart.update();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error measuring baseline:', error);
+                    $('#baseline-value').text('Error measuring baseline');
+                },
+                complete: function() {
+                    $('#measure-baseline').prop('disabled', false);
+                    $('#measure-baseline').text('Measure Baseline');
+                }
+            });
+        });
+
+        // Load existing baseline on page load
+        $.ajax({
+            url: '/get_baseline',
+            method: 'GET',
+            success: function(response) {
+                $('#baseline-value').text(response.baseline.toFixed(4) + ' mW');
+                
+                // Add baseline line to energy chart
+                energyChart.options.plugins.annotation = {
+                    annotations: {
+                        baseline: {
+                            type: 'line',
+                            yMin: response.baseline,
+                            yMax: response.baseline,
+                            borderColor: 'rgba(255, 0, 0, 0.5)',
+                            borderWidth: 2,
+                            label: {
+                                content: 'Baseline',
+                                enabled: true
+                            }
+                        }
+                    }
+                };
+                energyChart.update();
+            }
+        });
+        */
+
+        // Set up periodic data refresh intervals
+        // Fetch sensor data every second for real-time visualization
+        setInterval(fetchSensorData, 1000);
+        
+        // Fetch energy data every second for power consumption tracking
+        setInterval(updateEnergyChart, 1000);
+    </script>
+</body>
+</html>
