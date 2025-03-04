@@ -20,7 +20,7 @@ class SensorMonitor:
         Returns:
             Dictionary containing sensor values or error if end of data reached
         """
-        df = pd.read_csv('dataset_raw.csv')
+        df = pd.read_csv('dataset_raw_small.csv')
         if self.current_index < len(df):
             latest_row = df.iloc[self.current_index]
             sensor_data = {
