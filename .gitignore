@@ -5,6 +5,7 @@ energy_data.csv
 powermetrics_log.txt
 samna.log
 dataset_raw.csv
+dataset_raw_small.csv
 
 # Python
 __pycache__/
