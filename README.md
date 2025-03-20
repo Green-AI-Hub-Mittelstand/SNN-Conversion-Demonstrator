@@ -2,7 +2,7 @@
 
 <br />
 <div align="center">
-  <h1 align="center">Carbon Tracker</h1>
+  <h1 align="center">SNN Conversion Demonstrator</h1>
   
   <p align="center">
     <a href="https://github.com/Green-AI-Hub-Mittelstand/readme_template/issues">Report Bug</a>
@@ -27,10 +27,6 @@
 </div>
 
 <br/>
-
-# SNN Conversion Demonstrator
-
-A Flask-based web application for demonstrating and comparing the performance of Spiking Neural Networks (SNN) and traditional Artificial Neural Networks (ANN).
 
 ## Overview
 
