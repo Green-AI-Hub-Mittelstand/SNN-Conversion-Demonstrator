@@ -1,0 +1,26 @@
+# Core dependencies
+numpy>=1.22.0
+pandas>=1.4.0
+scipy>=1.8.0
+tqdm>=4.64.0
+
+# Deep learning frameworks
+torch>=1.12.0
+torchvision>=0.13.0
+
+# Neuromorphic computing frameworks
+rockpool>=2.5  # Neuromorphic computing framework
+samna>=0.12    # Xylo device interaction SDK
+
+# Web framework
+Flask>=2.2.0
+Werkzeug>=2.2.0
+
+# Image processing
+Pillow>=9.0.0  # PIL fork
+
+# Energy monitoring
+carbontracking>=1.2.0  # For Mac energy monitoring
+
+# Visualization (for web UI)
+matplotlib>=3.5.0
