@@ -1,3 +1,33 @@
+<a name="readme-top"></a>
+
+<br />
+<div align="center">
+  <h1 align="center">Carbon Tracker</h1>
+  
+  <p align="center">
+    <a href="https://github.com/Green-AI-Hub-Mittelstand/readme_template/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/Green-AI-Hub-Mittelstand/readme_template/issues">Request Feature</a>
+  </p>
+
+  <br />
+
+  <p align="center">
+    <a href="https://www.green-ai-hub.de">
+    <img src="images/green-ai-hub-keyvisual.svg" alt="Logo" width="80%">
+  </a>
+    <br />
+    <h3 align="center"><strong>Green-AI Hub Mittelstand</strong></h3>
+    <a href="https://www.green-ai-hub.de"><u>Homepage</u></a> 
+    | 
+    <a href="https://www.green-ai-hub.de/kontakt"><u>Contact</u></a>
+  
+   
+  </p>
+</div>
+
+<br/>
+
 # SNN Conversion Demonstrator
 
 A Flask-based web application for demonstrating and comparing the performance of Spiking Neural Networks (SNN) and traditional Artificial Neural Networks (ANN).
